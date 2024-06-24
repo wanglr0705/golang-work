@@ -4,10 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gomodule/redigo/redis"
+	"go_xorm_mysql_redis/utils"
 	"log"
 )
 
-func (l *DistributedLock) Unlock(key string, value string) error {
+func (l *DistributedLock) Unlock(ch chan string, key string, value string) error {
 
 	// 定义Lua脚本
 	luaScript := `
@@ -22,7 +23,7 @@ func (l *DistributedLock) Unlock(key string, value string) error {
 	// 执行Lua脚本
 	reply, err := l.Rdb.Do("eval", luaScript, 1, "item", key, value)
 	if err != nil {
-		log.Println("解锁失败:", err)
+		log.Println("解锁失败:", utils.LogError(ch, err))
 		return err
 	}
 
@@ -30,9 +31,9 @@ func (l *DistributedLock) Unlock(key string, value string) error {
 	l.WatchdogCancelFunc()
 
 	// 将Redis的回复转换为字符串
-	v, err := redis.Int64(reply, err)
+	v, err := redis.Int(reply, err)
 	if err != nil {
-		log.Println("Redis的回复转换为字符串失败:", err)
+		log.Println("Redis的回复转换为整数失败:", utils.LogError(ch, err))
 		return err
 	}
 	if v == 0 {

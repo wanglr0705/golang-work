@@ -27,7 +27,7 @@ func NewDistributedLock(ctx context.Context, rdb redis.Conn, expireTime int, wat
 }
 
 type DistributedLockIn interface {
-	Lock(key string) (string, error)
-	Unlock(key string, value string) error
-	watchdog(key string) error
+	Lock(ch chan string, key string) (string, error)
+	Unlock(ch chan string, key string, value string) error
+	watchdog(ch chan string, key string) error
 }
