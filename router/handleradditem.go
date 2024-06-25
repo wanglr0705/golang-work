@@ -1,11 +1,12 @@
 package router
 
 import (
-	"github.com/gin-gonic/gin"
 	"go_xorm_mysql_redis/dao"
 	"go_xorm_mysql_redis/pojo"
 	"go_xorm_mysql_redis/types"
 	"go_xorm_mysql_redis/utils"
+
+	"github.com/gin-gonic/gin"
 )
 
 // 增加商品信息

@@ -2,15 +2,18 @@ package middleware
 
 import (
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 func LoggerMiddleware(c *gin.Context) {
+	// @warn fmt.Print处理日志不太好
 	fmt.Println("============请求开始============")
 	// 记录请求开始时间
 	start := time.Now()
 
+	//@warn 这个是做什么的
 	// 创建用于传递错误信息的通道
 	errorstrCh := make(chan string)
 	errstrSliceCh := make(chan []string)
