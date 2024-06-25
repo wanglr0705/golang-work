@@ -2,17 +2,19 @@ package dao
 
 import (
 	"errors"
+	"github.com/coocood/freecache"
 	"github.com/gomodule/redigo/redis"
 	"go_xorm_mysql_redis/pojo"
 	"go_xorm_mysql_redis/types"
 	"go_xorm_mysql_redis/utils"
 	redis_distributed_lock "go_xorm_mysql_redis/utils/redis-distributed-lock"
+	"strconv"
 	"time"
 	"xorm.io/xorm"
 )
 
 // 删除商品信息
-func DeleteItemDao(ch chan string, db *xorm.Engine, rdb redis.Conn, distributedLock *redis_distributed_lock.DistributedLock, itemId int) (time.Time, int, error) {
+func DeleteItemDao(ch chan string, db *xorm.Engine, rdb redis.Conn, cache *freecache.Cache, distributedLock *redis_distributed_lock.DistributedLock, itemId int, appLocal string) (time.Time, int, error) {
 	// 尝试获取分布式锁(强一致性，同时防止脏读)
 	value, err := distributedLock.Lock(ch, types.LockKey)
 	if err != nil {
@@ -45,5 +47,9 @@ func DeleteItemDao(ch chan string, db *xorm.Engine, rdb redis.Conn, distributedL
 		return time.Time{}, types.ErrRedisSetData, errors.Join(err, utils.LogError(ch, errors.New("删除缓存失败")))
 	}
 
-	return now, types.Success, nil
+	//删除本地缓存
+	itemIdStr := strconv.Itoa(itemId)
+	_ = cache.Del([]byte(itemIdStr))
+
+	return utils.GetTime(ch, appLocal), types.Success, nil
 }

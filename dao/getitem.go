@@ -3,16 +3,18 @@ package dao
 import (
 	"encoding/json"
 	"errors"
+	"github.com/coocood/freecache"
 	"github.com/gomodule/redigo/redis"
 	"go_xorm_mysql_redis/pojo"
 	"go_xorm_mysql_redis/types"
 	"go_xorm_mysql_redis/utils"
 	redis_distributed_lock "go_xorm_mysql_redis/utils/redis-distributed-lock"
 	"log"
+	"strconv"
 	"xorm.io/xorm"
 )
 
-func GetItemDao(ch chan string, db *xorm.Engine, rdb redis.Conn, distributedLock *redis_distributed_lock.DistributedLock, itemId int) (pojo.ResponseData, int, error) {
+func GetItemDao(ch chan string, db *xorm.Engine, rdb redis.Conn, cache *freecache.Cache, distributedLock *redis_distributed_lock.DistributedLock, itemId int) (pojo.ResponseData, int, error) {
 	// 尝试获取分布式锁(强一致性，防止脏读)
 	value, err := distributedLock.Lock(ch, types.LockKey)
 	if err != nil {
@@ -26,6 +28,29 @@ func GetItemDao(ch chan string, db *xorm.Engine, rdb redis.Conn, distributedLock
 			panic(utils.LogError(ch, errors.New("解锁失败")))
 		}
 	}()
+
+	//从本地缓存获取数据
+	itemIdStr := strconv.Itoa(itemId)
+	v, err := cache.Get([]byte(itemIdStr))
+	if err != nil {
+		if err == freecache.ErrNotFound { //没有命中缓存
+		} else {
+			return pojo.ResponseData{}, types.ErrCacheGetData, nil
+		}
+	} else {
+		// 缓存命中
+		var item pojo.Item
+		err := json.Unmarshal(v, &item)
+		if err != nil {
+			return pojo.ResponseData{}, types.ErrJSONConversion, utils.LogError(ch, err)
+		}
+		return pojo.ResponseData{
+			ItemID: item.ItemID,
+			Name:   item.Name,
+			Price:  item.Price,
+		}, types.Success, nil
+	}
+
 	//先从缓存redis获取
 	key := types.GetItemKey(itemId)
 	reply, err := rdb.Do("GET", key)
@@ -76,6 +101,12 @@ func GetItemDao(ch chan string, db *xorm.Engine, rdb redis.Conn, distributedLock
 		_, err = rdb.Do("EXPIRE", key, 3600)
 		if err != nil {
 			return storeInfo, types.ErrRedisExpireTime, utils.LogError(ch, errors.New("设置过期时间失败"))
+		}
+
+		//写入本地缓存
+		err = cache.Set([]byte(itemIdStr), data, types.LocalCacheExpirationTime)
+		if err != nil {
+			return pojo.ResponseData{}, types.ErrCacheSetData, utils.LogError(ch, errors.New("本地缓存写入失败"))
 		}
 		return storeInfo, types.Success, nil
 	} else {

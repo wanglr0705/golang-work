@@ -3,18 +3,20 @@ package dao
 import (
 	"encoding/json"
 	"errors"
+	"github.com/coocood/freecache"
 	"github.com/gomodule/redigo/redis"
 	"go_xorm_mysql_redis/pojo"
 	"go_xorm_mysql_redis/types"
 	"go_xorm_mysql_redis/utils"
 	redis_distributed_lock "go_xorm_mysql_redis/utils/redis-distributed-lock"
 	"log"
+	"strconv"
 	"time"
 	"xorm.io/xorm"
 )
 
 // 添加商品信息
-func AddItemDao(ch chan string, db *xorm.Engine, rdb redis.Conn, distributedLock *redis_distributed_lock.DistributedLock, addItemReq pojo.AddItemReq) (pojo.ResponseData, int, error) {
+func AddItemDao(ch chan string, db *xorm.Engine, rdb redis.Conn, cache *freecache.Cache, distributedLock *redis_distributed_lock.DistributedLock, addItemReq pojo.AddItemReq) (pojo.ResponseData, int, error) {
 	// 尝试获取分布式锁(防止重复插入)
 	value, err := distributedLock.Lock(ch, types.LockKey)
 	if err != nil {
@@ -61,6 +63,13 @@ func AddItemDao(ch chan string, db *xorm.Engine, rdb redis.Conn, distributedLock
 	_, err = rdb.Do("EXPIRE", key, 3600)
 	if err != nil {
 		return pojo.ResponseData{}, types.ErrRedisExpireTime, utils.LogError(ch, errors.New("设置过期时间失败"))
+	}
+
+	//写入本地缓存
+	itemId := strconv.Itoa(item.ItemID)
+	err = cache.Set([]byte(itemId), data, types.LocalCacheExpirationTime)
+	if err != nil {
+		return pojo.ResponseData{}, types.ErrCacheSetData, utils.LogError(ch, errors.New("本地缓存写入失败"))
 	}
 
 	return pojo.ResponseData{
