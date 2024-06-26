@@ -2,54 +2,25 @@ package middleware
 
 import (
 	"fmt"
-	"time"
-
 	"github.com/gin-gonic/gin"
+	"go_xorm_mysql_redis/pojo"
+	"go_xorm_mysql_redis/utils"
+	"runtime/debug"
+	"time"
 )
 
 func LoggerMiddleware(c *gin.Context) {
-	// @warn fmt.Print处理日志不太好
-	fmt.Println("============请求开始============")
 	// 记录请求开始时间
 	start := time.Now()
 
-	//@warn 这个是做什么的
-	// 创建用于传递错误信息的通道
-	errorstrCh := make(chan string)
-	errstrSliceCh := make(chan []string)
-	c.Set("errorstrCh", errorstrCh)
 	defer func() {
-		close(errorstrCh)
-		// 从错误信息切片通道中获取错误信息切片
-		errstrSlice := <-errstrSliceCh
-		close(errstrSliceCh)
-		// 遍历并打印错误信息
-		fmt.Println("错误：")
-		for _, errstr := range errstrSlice {
-			fmt.Println(errstr)
+		if r := recover(); r != nil {
+			fmt.Println("严重错误panic信息:", r)
+			panicData := r.(pojo.PanicData)
+			utils.ResponseError(c, panicData.Code, panicData.Error)
+			debug.PrintStack()
 		}
 	}()
-
-	// 启动一个goroutine来收集错误信息
-	go func(errorstrCh2 chan string, errstrSliceCh2 chan []string) {
-		// 初始化一个错误信息切片
-		var errorSlice []string
-		for true {
-			select {
-			case errstr, ok := <-errorstrCh2:
-				errorSlice = append(errorSlice, errstr)
-				// 如果通道关闭，将错误信息切片发送到通道并返回
-				if !ok {
-					errstrSliceCh2 <- errorSlice
-					//fmt.Println("若多次打印，则内存泄露")
-					return
-				}
-				break
-			default:
-				break
-			}
-		}
-	}(errorstrCh, errstrSliceCh)
 
 	// 处理请求
 	c.Next()
