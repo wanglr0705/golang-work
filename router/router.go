@@ -8,7 +8,6 @@ import (
 	"go_xorm_mysql_redis/config"
 	"go_xorm_mysql_redis/middleware"
 	redis_distributed_lock "go_xorm_mysql_redis/utils/redis-distributed-lock"
-	"log"
 	"xorm.io/xorm"
 )
 
@@ -67,6 +66,6 @@ func (l *Router) RouterRegistration() {
 
 	err := r.Run(hostPort)
 	if err != nil {
-		log.Println(err)
+		panic(err)
 	}
 }
