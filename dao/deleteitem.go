@@ -14,17 +14,17 @@ import (
 )
 
 // 删除商品信息
-func DeleteItemDao(ch chan string, db *xorm.Engine, rdb redis.Conn, cache *freecache.Cache, distributedLock *redis_distributed_lock.DistributedLock, itemId int, appLocal string) (time.Time, int, error) {
+func DeleteItemDao(db *xorm.Engine, rdb redis.Conn, cache *freecache.Cache, distributedLock *redis_distributed_lock.DistributedLock, itemId int, appLocal string) (time.Time, int, error) {
 	// 尝试获取分布式锁(强一致性，同时防止脏读)
-	value, err := distributedLock.Lock(ch, types.LockKey)
+	value, err := distributedLock.Lock(types.LockKey)
 	if err != nil {
-		return time.Time{}, types.LockInvalidRequest, errors.Join(err, utils.LogError(ch, errors.New("加锁失败")))
+		panic(pojo.PanicData{Code: types.ErrLock, Error: errors.New("加锁失败")})
 	}
 	defer func() {
 		// 尝试释放分布式锁
-		err = distributedLock.Unlock(ch, types.LockKey, value)
+		err = distributedLock.Unlock(types.LockKey, value)
 		if err != nil {
-			panic(utils.LogError(ch, err))
+			panic(pojo.PanicData{Code: types.ErrUnlock, Error: errors.New("释放锁失败")})
 		}
 	}()
 
@@ -37,19 +37,19 @@ func DeleteItemDao(ch chan string, db *xorm.Engine, rdb redis.Conn, cache *freec
 	}
 	_, err = db.Where("id = ?", itemId).Cols("is_active", "deleted_at").Update(&item)
 	if err != nil {
-		return time.Time{}, types.ErrMySQLDeleteData, errors.Join(err, utils.LogError(ch, errors.New("删除数据失败")))
+		panic(pojo.PanicData{Code: types.ErrMySQLDeleteData, Error: errors.New("删除数据失败")})
 	}
 
 	//再删除缓存
 	key := types.GetItemKey(itemId)
 	_, err = rdb.Do("DEL", key)
 	if err != nil {
-		return time.Time{}, types.ErrRedisSetData, errors.Join(err, utils.LogError(ch, errors.New("删除缓存失败")))
+		panic(pojo.PanicData{Code: types.ErrRedisSetData, Error: errors.New("删除缓存失败")})
 	}
 
 	//删除本地缓存
 	itemIdStr := strconv.Itoa(itemId)
 	_ = cache.Del([]byte(itemIdStr))
 
-	return utils.GetTime(ch, appLocal), types.Success, nil
+	return utils.GetTime(appLocal), types.Success, nil
 }
