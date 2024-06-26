@@ -2,7 +2,6 @@ package utils
 
 import (
 	"github.com/gin-gonic/gin"
-	"go_xorm_mysql_redis/types"
 )
 
 // 响应体格式
@@ -23,9 +22,9 @@ func ResponseError(c *gin.Context, code int, err error) {
 }
 
 // 正确返回
-func ResponseSuccess(c *gin.Context, resp interface{}) {
+func ResponseSuccess(c *gin.Context, code int, resp interface{}) {
 	var body Body
-	body.Code = types.Success
+	body.Code = code
 	body.Msg = "成功"
 	body.Data = resp
 	c.JSON(200, body)

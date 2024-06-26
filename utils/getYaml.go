@@ -8,8 +8,6 @@ import (
 )
 
 func GetYaml(cfg *config.Config) *config.Config {
-	//logStorage := NewLogStorage()
-	//logStorage.WriteLogFiler("正在读取yaml文件")
 	// 读取YAML配置文件
 	data, err := os.ReadFile("config/config.yaml")
 	if err != nil {
@@ -19,8 +17,7 @@ func GetYaml(cfg *config.Config) *config.Config {
 	// 将读取的YAML数据解码到结构体中
 	err = yaml.Unmarshal(data, cfg)
 	if err != nil {
-		//logStorage.WriteLogFiler("读取yaml文件失败，错误：" + err.Error())
+		panic(err)
 	}
-	//logStorage.WriteLogFiler("读取yaml文件成功")
 	return cfg
 }
