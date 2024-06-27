@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"go_xorm_mysql_redis/pojo"
+	"go_xorm_mysql_redis/item"
 	"go_xorm_mysql_redis/types"
 	"time"
 )
