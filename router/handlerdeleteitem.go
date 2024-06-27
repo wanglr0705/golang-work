@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	"go_xorm_mysql_redis/dao"
-	"go_xorm_mysql_redis/pojo"
+	"go_xorm_mysql_redis/item"
 	"go_xorm_mysql_redis/types"
 	"go_xorm_mysql_redis/utils"
 	"strconv"
