@@ -2,7 +2,7 @@ Host: 0.0.0.0
 Port: 8080
 Database:
   UserName: root
-  PassWord: 123456
+
   IdAddress: 127.0.0.1
   Port: 3306
   DbName: go-xorm-mysql-redis
@@ -10,4 +10,3 @@ Database:
 Redis:
   network: tcp
   address: 127.0.0.1:6379
-  password: 123456
