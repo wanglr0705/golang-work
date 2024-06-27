@@ -5,7 +5,7 @@ import (
 	"errors"
 	"github.com/coocood/freecache"
 	"github.com/gomodule/redigo/redis"
-	"go_xorm_mysql_redis/pojo"
+	"go_xorm_mysql_redis/item"
 	"go_xorm_mysql_redis/types"
 	redis_distributed_lock "go_xorm_mysql_redis/utils/redis-distributed-lock"
 	"log"
