@@ -3,7 +3,7 @@ package redis_distributed_lock
 import (
 	"fmt"
 	"github.com/gomodule/redigo/redis"
-	"go_xorm_mysql_redis/pojo"
+	"go_xorm_mysql_redis/item"
 	"go_xorm_mysql_redis/types"
 )
 
