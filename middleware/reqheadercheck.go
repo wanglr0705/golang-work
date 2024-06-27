@@ -3,7 +3,7 @@ package middleware
 import (
 	"errors"
 	"github.com/gin-gonic/gin"
-	"go_xorm_mysql_redis/pojo"
+	"go_xorm_mysql_redis/item"
 	"go_xorm_mysql_redis/types"
 )
 
